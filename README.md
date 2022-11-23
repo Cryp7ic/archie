@@ -4,8 +4,6 @@
 ██╔══██║██╔══██╗██║░░██╗██╔══██║██║██╔══╝░░
 ██║░░██║██║░░██║╚█████╔╝██║░░██║██║███████╗
 ╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═╝╚══════╝
-# Arch Linux Installation
-
 ## Table of contents
 
 - [Disk Partitioning](#disk-partitioning)
