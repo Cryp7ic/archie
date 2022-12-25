@@ -1,28 +1,81 @@
-░█████╗░██████╗░░█████╗░██╗░░██╗██╗███████╗
-██╔══██╗██╔══██╗██╔══██╗██║░░██║██║██╔════╝
-███████║██████╔╝██║░░╚═╝███████║██║█████╗░░
-██╔══██║██╔══██╗██║░░██╗██╔══██║██║██╔══╝░░
-██║░░██║██║░░██║╚█████╔╝██║░░██║██║███████╗
-╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝╚═╝╚══════╝
-# Archie
+# Arch Linux Installation
+
+A guide for installing Arch Linux made by Cryp7ic.
+
+> **Note:** GRUB booatloader, ext4 file system, DWM.
+
 ## Table of contents
 
-- [Disk Partitioning](#disk-partitioning)
-- [Mount](#mount)
+- [Network Configuration](#network-configuration)
+- [Disk Configuration](#disk-configuration)
+- [Mounting](#mounting)
+- [Installation](#installation)
+- [Create File System Table](#create-file-system-table)
+- [Set Zoneinfo](#set-zoneinfo)
+- [GRUB](#grub)
+- [Unmount & Reboot](#unmount-&-reboot)
+- [DWM](#dwm)
+- [Additional Packages](#additional-packages)
 
-### Disk Partitioning
+## Network Configuration
 
-List disks
+Check whether you have Internet connection.
 
-`# lsblk`
+```shell
+$ ping 8.8.8.8
+```
+
+**Wi-Fi connections**
+
+Get into interactive mode
+
+```shell
+[iwd]# iwctl
+```
+
+If you do not know your wireless device name, list the wireless devices:
+
+```shell
+[iwd]# device list
+```
+
+List all available networks:
+
+```shell
+[iwd]# station <device> get-networks
+```
+
+Connect to a network:
+
+```shell
+[iwd]# station <device> connect <"SSID">
+```
+
+If it is asking for a pass phrase, you can supply it as a command line argument:
+
+```shell
+$ iwctl --passphrase <passphrase> station <device> connect <"SSID">
+```
+
+## Disk Configuration
+
+#### Disk Partitioning
+
+**List disks**
+
+```shell
+$ lsblk
+```
 
 Choose the right disk..
 
 In my case, it is /dev/sda
 
-`# gdisk /dev/sda`
+```shell
+# gdisk /dev/sda
+```
 
-#### EFI Partition
+**EFI Partition**
 
 Command (? for help): `n` - for 'New'
 
@@ -30,11 +83,11 @@ Partition number (1-128, default 1): `Enter`
 
 First sector (...): `Enter`
 
-Last sector (...): `+500M` - Stands for 500MB
+Last sector (...): `+300M` - Stands for 300MB
 
 Hex code or GUID (L to show codes, Enter = 8300): `ef00`
 
-#### BTRFS Partition
+**Swap Partition**
 
 Command (? for help): `n` - for 'New'
 
@@ -42,223 +95,469 @@ Partition number (2-128, default 2): `Enter`
 
 First sector (...): `Enter`
 
+Last sector (...): `+1024M` - Stands for 1GB
+
+Hex code or GUID (L to show codes, Enter = 8300): `8200`
+
+**Root Partition**
+
+Command (? for help): `n` - for 'New'
+
+Partition number (3-128, default 3): `Enter`
+
+First sector (...): `Enter`
+
 Last sector (...): `Enter`
 
 Hex code or GUID (L to show codes, Enter = 8300): `Enter`
 
-#### Write
+**Write**
 
 `w`
 
-`y`
+#### Disk Formatting
 
-#### Formatting
+**Check partitions:**
 
-`lsblk` to check the partition's names.
+```shell
+$ lsblk
+```
 
 **EFI Partition**
 
-`mkfs.fat -F32 /dev/sda1`
+```shell
+# mkfs.fat -F 32 /dev/sda1
+```
 
-**BTRFS Partition with Encryption**
+**Swap Partition**
 
-`cryptsetup --cipher aes-xts-plain64 --hash sha512 --use-random --verify-passphrase luksFormat /dev/sda2`
+```shell
+# mkswap /dev/sda2
+```
 
-Are you sure?: `YES`
+**Root Partition**
 
-Enter passphrase for /dev/sda3: `your password`
+```shell
+# mkfs.ext4 /dev/sda3
+```
 
-Verify passphrase: `your password`
+## Mounting
 
-**Now we need to open the disk in order to use it**
+```shell
+# mkdir -p /mnt/boot/efi
+```
 
-`cryptsetup luksOpen /dev/sda2 <partition name>`, I call it `encrypted`
+```shell
+# mount /dev/sda1 /mnt/boot/efi
+```
 
-Enter passphrase: `your password`
+```shell
+# swapon /dev/sda2
+```
 
-**Now we can format this partition**
+```shell
+# mount /dev/sda3 /mnt
+```
 
-`mkfs.btrfs /dev/mapper/encrypted`
+Check:
 
-### Mount & Subvolumes
+```shell
+$ lsblk
+```
 
-`mount /dev/mapper/encrypted /mnt`
+## Installation
 
-`cd /mnt`
-
-`btrfs subvolume create @`
-
-`btrfs subvolume create @home`
-
-> You can create more sub-volumes if you want.
-
-`cd`
-
-`umount /mnt`
-
-> I unmounted the /mnt partition, because now i need to remount the 2 volumes i just created.
-
-The `noatime` option makes your system perform better by reducing read and write access times on the system:
-
-`mount -o noatime,compress=zstd,space_cache=v2,discard=async,ssd,subvol=@ /dev/mapper/encrypted /mnt`
-
-**Home partition**
-
-Now we need to do the same for the `@home` sub-volume
-
-First we need to create a directory for it:
-
-`mkdir /mnt/home`
-
-`mount -o noatime,compress=zstd,space_cache=v2,discard=async,ssd,subvol=@home /dev/mapper/encrypted /mnt/home`
-
-**EFI partition**
-
-`mkdir /mnt/boot`
-
-`mount /dev/sda1 /mnt/boot`
-
-![image-20221123082615469](/home/arksec/.config/Typora/typora-user-images/image-20221123082615469.png)
-
-### Installation
+```shell
+# pacman -Sy archlinux-keyring
+```
 
 > intel-ucode for intel CPUs, amd-ucode for AMD CPUs
 
-`pacstrap /mnt base linux linux-firmware git vim intel-ucode`
+`pacstrap /mnt base linux linux-firmware git networkmanager dhcpcd neovim man-db intel-ucode sudo iwd sof-firmware grub efibootmgr`
 
-### Create File System Table
+## Create File System Table
 
 `genfstab -U /mnt >> /mnt/etc/fstab`
 
 `arch-chroot /mnt`
 
-`vim /etc/mkinitcpio.conf`
+## Set Zoneinfo
 
-**Change the following:**
+**Find yours:**
 
-MODULES=(**btrfs**)
+```shell
+# ls /usr/share/zoneinfo
+```
 
-HOOKS=(base udev autodetect modconf block **encrypt** filesystems keyboard fsck)
+```shell
+# ln -sf /usr/share/zoneinfo/Europe/Tallinn /etc/localtime
+```
 
-Save & Exit
+```sh
+# hwclock --systohc
+```
 
-`mkinitcpio -p linux`
 
-### Install Arch
 
-`ln -sf /usr/share/zoneinfo/Europe/Tallinn /etc/localtime
-hwclock --systohc
-sed -i '178s/.//' /etc/locale.gen
-locale-gen
-echo "LANG=en_UK.UTF-8" >> /etc/locale.conf
-echo "KEYMAP=en_US" >> /etc/vconsole.conf
-echo "arch" >> /etc/hostname
-echo "127.0.0.1 localhost" >> /etc/hosts
-echo "::1       localhost" >> /etc/hosts
-echo "127.0.1.1 arch.localdomain arch" >> /etc/hosts
-echo root:password | chpasswd`
+```shell
+# vim /etc/locale.gen
+```
 
-`pacman -S efibootmgr networkmanager network-manager-applet dialog wpa_supplicant mtools dosfstools  base-devel linux-headers avahi xdg-user-dirs xdg-utils gvfs gvfs-smb  nfs-utils inetutils dnsutils bluez bluez-utils cups hplip alsa-utils  pipewire pipewire-alsa pipewire-pulse pipewire-jack bash-completion  openssh rsync acpi acpi_call tlp virt-manager qemu  qemu-arch-extra edk2-ovmf bridge-utils dnsmasq vde2 openbsd-netcat  iptables-nft ipset firewalld flatpak sof-firmware nss-mdns acpid  os-prober terminus-font`
+Uncomment "en_US.UTF-8 UTF-8"
 
-`# pacman -S --noconfirm xf86-video-amdgpu
-pacman -S --noconfirm nvidia nvidia-utils nvidia-settings`
 
-`#grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB #change the directory to /boot/efi is you mounted the EFI partition at /boot/efi`
 
-`#grub-mkconfig -o /boot/grub/grub.cfg`
+```shell
+# locale-gen
+```
 
+
+
+```shell
+# echo "LANG=en_UK.UTF-8" >> /etc/locale.conf
+```
+
+**Keyboard:**
+
+```shell
+# echo "KEYMAP=en_US" >> /etc/vconsole.conf
+```
+
+**Hostname file:**
+
+```shell
+# echo "arch" >> /etc/hostname
+```
+
+**Optional:**
+
+```shell
+# mkinitcpio -P
+```
+
+**Hosts file:**
+
+```shell
+# echo "127.0.0.1 localhost" >> /etc/hosts
+# echo "::1       localhost" >> /etc/hosts
+# echo "127.0.1.1 arch.localdomain arch" >> /etc/hosts
+```
+
+**Add a root password:**
+
+```shell
+# passwd
+
+<Enter root password>
+```
+
+**Add a user:**
+
+```shell
+# useradd -m -G wheel <username>
+```
+
+```shell
+# echo "<username> ALL=(ALL) ALL" >> /etc/sudoers.d/<username>
+```
+
+## GRUB
+
+Install GRUB:
+
+```shell
+# grub-install
+```
+
+```shell
+# grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+**Check if you can switch users**
+
+```shell
+# su <username>
+```
+
+## Unmount & Reboot
+
+```shell
+# exit
+# exit
+# umount -R /mnt
+# reboot
+```
+
+```shell
+# systemctl enable NetworkManager
+# systemctl start NetworkManager
+# networkctl
+```
+
+## DWM
+
+**Update & download xorg**
+
+```shell
+$ sudo pacman -Syu
+```
+
+```shell
+$ sudo pacman -S xorg xorg-xinit
+```
+
+**Create .sources folder in $HOME**
+
+```shell
+$ mkdir .sources
+$ cd .sources
+$ git clone https://aur.archlinux.org/yay.git
+$ cd yay
+$ makepkg -si
+```
+
+**Downloading some packages**
+
+```shell
+sudo pacman -S alacritty picom feh firefox dolphin
+```
+
+**Download & configure DWM**
+
+```shell
+[cryp7ic@arch .sources]$ git clone https://github.com/cryp7ic/dwm
+$ cd dwm
+$ ls
+$ nvim config.def.h
+```
+
+> **Note:** Mod4 is the Windows key
+
+```shell
+$ which alacritty
+/usr/bin/alacritty
+```
+
+Set the alacritty path in **config.def.h**
+
+```shell
+[cryp7ic@dwm]$ sudo make clean install
+```
+
+**dmenu**
+
+```shell
+[cryp7ic@dwm]$ cd ..
+[cryp7ic@.sources]$ git clone https://git.suckless.org/dmenu
+$ cd dmenu
+$ nvim config.def.h
+(Change the font size to 16)
+$ sudo make clean install
+```
+
+**startx**
+
+```shell
+$ nvim .xinitrc
+---
+picom &
+dwm
+```
+
+**Alacritty**
+
+Download the official alacritty.yml file
+
+```shell
+$ mkdir ~/.config/alacritty
+```
+
+Now move the official .yml file into *~/.config/alacritty*
+
+```shell
+$ mv alacritty.yml ~/.config/alacritty/
+```
+
+Configure alacritty:
+
+```shell
+$ cd ~/.config/alacritty
+```
+
+```shell
+$ nvim alacritty.yml
+Uncomment: 
+
+window
+
+padding
+x: 15
+y: 15
+
+opacity: 0.5
+
+
+font
+normal:
+family: Fira Code
+style: regular
+size: 10.0
+```
+
+**fish shell**
+
+```shell
+$ sudo pacman -S fish
+```
+
+```shell
+$ which fish
+/usr/bin/fish
+```
+
+```shell
+$ nvim ~/.config/alacritty/alacritty.yml
+Uncomment:
+fish:
+program: /usr/bin/fish
+args:
+- --login
+```
+
+**Wallpapers**
+
+```shell
+$ feh --bg-fill /path/to/file.png
+```
+
+The file *.fehbg* sets the recently used wallpaper if run.
+
+If you want to set the wallpaper on start every single time:
+
+```shell
+$ nvim .xinitrc
+picom &
+~/.fehbg &
+dwm
+```
+
+**neofetch**
+
+```shell
+$ nvim .config/fish/config.fish
+
+Add those lines:
+function fish_greeting
+	neofetch
+end
+```
+
+**sxhkd**
+
+sxhkd is used for hot key management
+
+```shell
+$ sudo pacman -S sxhkd
+$ nvim .config/sxhkdrc
+Configure it. (i have some functions in github (cryp7ic/dotfiles))
+$ nvim .xinitrc
+
+it should look like this:
+sxhkd -c ~/.config/sxhkdrc &
+picom &
+~/.fehbg &
+dwm
+```
+
+**Date & time**
+
+```shell
+$ mkdir .scripts
+$ cd .scripts
+$ nvim time.sh
+---
+#!/bin/sh
+
+while true; do
+	xsetroot -name "$(date)"
+	sleep 1
+done
+```
+
+```shell
+$ chmod +x time.sh
+```
+
+```shell
+$ cd ..
+$ nvim .xinitrc
+---
+sxhkd -c ~/.config/sxhkdrc &
+~/.scripts/time.sh &
+picom &
+~/.fehbg &
+dwm
+```
+
+**Audio**
+
+```shell
+$ sudo pacman -S pavucontrol
+```
+
+**Running startx:**
+
+```shell
+$ startx
+```
+
+## Additional Packages
+
+```shell
+pacman -S papirus-icon-theme arc-gtk-theme network-manager-applet dialog wpa_supplicant mtools dosfstools  base-devel linux-headers avahi xdg-user-dirs xdg-utils gvfs gvfs-smb  nfs-utils inetutils dnsutils bluez bluez-utils cups hplip alsa-utils  pipewire pipewire-alsa pipewire-pulse pipewire-jack bash-completion rsync acpi acpi_call tlp virt-manager qemu  qemu-arch-extra edk2-ovmf bridge-utils dnsmasq vde2 openbsd-netcat  iptables-nft ipset firewalld nss-mdns acpid  os-prober virtualbox wireshark-qt
+```
+
+**Graphics card drivers**
+
+AMD:
+
+```shell
+$ pacman -S --noconfirm xf86-video-amdgpu
+```
+
+NVIDIA:
+
+```shell
+$ pacman -S --noconfirm nvidia nvidia-utils nvidia-settings nvidia-prime
+```
+
+**Enabling services**
+
+```shell
 systemctl enable NetworkManager
 systemctl enable bluetooth
 systemctl enable cups.service
 systemctl enable sshd
 systemctl enable avahi-daemon
-systemctl enable tlp # You can comment this command out if you didn't install tlp, see above
+systemctl enable tlp
 systemctl enable reflector.timer
 systemctl enable fstrim.timer
 systemctl enable libvirtd
 systemctl enable firewalld
-systemctl enable acpidsystemctl enable NetworkManager
+systemctl enable systemctl enable NetworkManager
 systemctl enable bluetooth
 systemctl enable cups.service
 systemctl enable sshd
 systemctl enable avahi-daemon
-systemctl enable tlp # You can comment this command out if you didn't install tlp, see above
+systemctl enable tlp 
 systemctl enable reflector.timer
 systemctl enable fstrim.timer
 systemctl enable libvirtd
 systemctl enable firewalld
 systemctl enable acpid
-
-`useradd -m arksec
-echo arksec:password | chpasswd
-usermod -aG libvirt arksec`
-
-`echo "arksec ALL=(ALL) ALL" >> /etc/sudoers.d/arksec`
-
-`printf "\e[1;32mDone! Type exit, umount -a and reboot.\e[0m"`
-
-
-
-#`git clone https://github.com/Ark-Sec/archie.git`
-
-#`cd archie`
-
-#`ls -l`
-
-#`chmod +x base-uefi.sh`
-
-#`cd /`
-
-#`./archie/base-uefi.sh`
-
-### Install Bootloader
-
-`bootctl --path=/boot install`
-
-`vim /boot/loader/loader.conf`
-
-**Change the following:**
-
-timeout 5
-
-default arch
-
-#console-mode keep
-
-### Create Bootloader Entry
-
-`blkid /dev/sda2`
-
-`blkid /dev/mapper/encrypted`
-
-`blkid /dev/sda2 >> /boot/loader/entries/arch.conf`
-
-`blkid /dev/mapper/encrypted >> /boot/loader/enries/arch.conf`
-
-**Now we will add the following:**
-
-`vim /boot/loader/entries/arch.conf`
-
-title Arch Linux
-
-linux /vmlinuz-linux
-
-initrd /initramfs-linux-fallback.img
-
-**Now we clean up the appended information, we only need the UUIDs from /dev/sda2 and /dev/mapper/encrypted**
-
-options cryptdevice=UUID=<sda2 UUID>:encrypted encrypted=UUID-<mapper UUID> rootflags=subvol=@ rw
-
-### Fallback command
-
-`cp /boot/loader/entries/arch.conf /boot/loader/entries/arch-fallback.conf`
-
-### Reboot
-
-umount -R /mnt
-
-`reboot`
+```
 
 Arch Linux (arch.conf)
 
-To enable EFI for a virtual machine using the graphical interface, open the settings of the virtual machine, choose *System* item from the panel on the left and *Motherboard* tab from the right panel, and check the checkbox *Enable EFI (special OSes only)*.
+> **Note:** To enable EFI for a virtual machine using the graphical interface, open the settings of the virtual machine, choose *System* item from the panel on the left and *Motherboard* tab from the right panel, and check the checkbox *Enable EFI (special OSes only)*.
+
