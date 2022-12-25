@@ -1,4 +1,4 @@
-# Arch Linux Installation
+# Arch Linux Installation Guide
 
 A guide for installing Arch Linux made by Cryp7ic.
 
