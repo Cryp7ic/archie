@@ -2,7 +2,7 @@
 
 A guide for installing Arch Linux made by Cryp7ic.
 
-> **Note:** GRUB booatloader, ext4 file system, DWM.
+> **Note:** GRUB bootloader, ext4 file system, DWM.
 
 ## Table of contents
 
