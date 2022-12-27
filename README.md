@@ -306,16 +306,6 @@ $ sudo pacman -Syu
 $ sudo pacman -S xorg xorg-xinit
 ```
 
-**Create .sources folder in $HOME**
-
-```shell
-$ mkdir .sources
-$ cd .sources
-$ git clone https://aur.archlinux.org/yay.git
-$ cd yay
-$ makepkg -si
-```
-
 **Downloading some packages**
 
 ```shell
@@ -325,24 +315,13 @@ sudo pacman -S alacritty picom feh firefox dolphin
 **Download & configure DWM**
 
 ```shell
-[cryp7ic@arch .sources]$ git clone https://github.com/cryp7ic/dwm
+$ cd ~/.config
+[cryp7ic@arch .config]$ git clone https://github.com/cryp7ic/dwm.git
 $ cd dwm
-$ ls
-$ nvim config.def.h
-```
-
-> **Note:** Mod4 is the Windows key
-
-```shell
-$ which alacritty
-/usr/bin/alacritty
+$ sudo make clean install
 ```
 
 Set the alacritty path in **config.def.h**
-
-```shell
-[cryp7ic@dwm]$ sudo make clean install
-```
 
 **dmenu**
 
