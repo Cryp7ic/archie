@@ -523,7 +523,7 @@ systemctl enable reflector.timer
 systemctl enable fstrim.timer
 systemctl enable libvirtd
 systemctl enable firewalld
-systemctl enable systemctl enable NetworkManager
+systemctl enable NetworkManager
 systemctl enable bluetooth
 systemctl enable cups.service
 systemctl enable sshd
