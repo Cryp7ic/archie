@@ -291,7 +291,7 @@ Install GRUB:
 ```shell
 # systemctl enable NetworkManager
 # systemctl start NetworkManager
-# networkctl
+# nmtui
 ```
 
 ## DWM
