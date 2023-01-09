@@ -15,7 +15,7 @@ A guide for installing Arch Linux made by Cryp7ic.
 - [GRUB](#grub)
 - [Unmount & Reboot](#unmount-&-reboot)
 - [DWM](#dwm)
-- [Additional Packages](#additional-packages)
+- [Post Install](#post-install)
 
 ## Network Configuration
 
