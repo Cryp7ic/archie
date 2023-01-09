@@ -502,7 +502,6 @@ $ startx
 - Install a backup kernel like LTS or Zen kernel
 - For NVIDIA users, create a pacman hook to ensure initramfs gets updated on every nvidia or kernel upgrade
 - Install noto-fonts for basic font coverage
-- Optionally, replace PulseAudio with PipeWire
 
 ```shell
 pacman -S papirus-icon-theme arc-gtk-theme network-manager-applet dialog mtools dosfstools  base-devel linux-headers avahi xdg-user-dirs xdg-utils gvfs gvfs-smb  nfs-utils inetutils dnsutils bluez bluez-utils cups hplip alsa-utils  pipewire pipewire-alsa pipewire-pulse pipewire-jack bash-completion rsync acpi acpi_call tlp virt-manager qemu  qemu-arch-extra edk2-ovmf bridge-utils dnsmasq vde2 openbsd-netcat  iptables-nft ipset firewalld nss-mdns acpid  os-prober virtualbox wireshark-qt flameshot discord haruna 
